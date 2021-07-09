@@ -78,7 +78,7 @@ class IndexDBStorage {
         while (!threadEnd){await this._sleep();}
 
         // Return recovered object
-        return objectStoreRequest.result;
+        return objectStoreRequest.result ? objectStoreRequest.result.value : null;
     }
 
     async removeItem(key){
