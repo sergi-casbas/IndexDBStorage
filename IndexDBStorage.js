@@ -1,5 +1,5 @@
-class IndexDBStorage {
-    constructor(database="IndexDBStorage") {
+class IndexedDBStorage {
+    constructor(database="IndexedDBStorage") {
         this.dbname  = database;
         this.isOpen = false;
     }
@@ -93,7 +93,7 @@ class IndexDBStorage {
         // Remove item. 
         let objectStoreRequest = objectStore.delete(key);
         objectStoreRequest.onsuccess = function(event) { threadEnd = true; };
-        objectStoreRequest.onerror = function(event) { threadEnd = true; console.log (`IndexDBStorage.removeItem error: ${event.target.error}`);  };
+        objectStoreRequest.onerror = function(event) { threadEnd = true; console.log (`IndexedDBStorage.removeItem error: ${event.target.error}`);  };
         while (!threadEnd){await this._sleep();}
     }
 
