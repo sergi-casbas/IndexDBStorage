@@ -1,7 +1,6 @@
 class IndexDBStorage {
-    constructor(database="IndexDBStorage", ttl=null) {
+    constructor(database="IndexDBStorage") {
         this.dbname  = database;
-        this.ttl = ttl;
         this.isOpen = false;
     }
 
@@ -111,6 +110,36 @@ class IndexDBStorage {
         // Clear whole store.
         let objectStoreRequest = objectStore.clear();
         objectStoreRequest.onsuccess = function(event) { threadEnd = true; };
+        while (!threadEnd){await this._sleep();}
+    }
+
+    async purge(seconds=null){
+        // variable to control asyncronity.
+        let threadEnd = false;
+
+        // Set time to live of the stored items. Convert to ms. 
+        let ttl = seconds ? seconds : this.ttl;
+
+        // If ttl is still null, no further actions are taken.
+        if (!ttl) {return;}
+        let keyRangeValue = IDBKeyRange.upperBound(Date.now() - (ttl*1000));
+
+        // open a read/write db transaction, ready for adding the data.
+        let transaction = this._db.transaction([this.storeName], "readwrite");
+
+        // create an object store on the transaction.
+        let objectStore = transaction.objectStore(this.storeName);
+
+        // Clear whole store.
+        objectStore.index('created').openCursor(keyRangeValue).onsuccess = function(event) {
+            let cursor = event.target.result;
+            if(cursor) {
+                objectStore.delete(cursor.primaryKey);
+                cursor.continue();
+            }
+            threadEnd = true; 
+        };
+
         while (!threadEnd){await this._sleep();}
     }
 
