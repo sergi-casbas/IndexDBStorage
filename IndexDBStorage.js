@@ -1,38 +1,56 @@
+/**
+ * Class to handle IndexedDB database like-as LocalStorage or SessionStorage.
+ * This class uses asyncronous calls because IndexedDB API access are asyncronous
+ * but they are internally re-sincronized and can be used at procedimental way prefixing it with 'await'.
+ */
 class IndexedDBStorage {
+    /**
+     * Initializes the indexedDBStorage class.
+     * @param {string} database Optional. User-defined database name. If none is specified 'IndexedDBStorage' is used.
+     */
     constructor(database="IndexedDBStorage") {
+        this._db = {};
         this.dbname  = database;
-        this.isOpen = false;
+        this.storeName = "default";
     }
 
+    /**
+     * Open the storage. This is the only operation not identically to Local/Sessino storage objects where the storage is implicitly open.
+     * @param {string} storeName Optional. User-defined storage name. If none is specified 'default' is used.
+     */
     async open(storeName="default") {
         // variable to control asyncronity.
         let threadEnd = false;
 
+        // Initialize local variables.
         this.storeName = storeName;
-        this.request = (window.indexedDB || window.webkitIndexedDB || window.mozIndexedDB).open(this.dbname, 1);
+        let indexedDB = (window.indexedDB || window.webkitIndexedDB || window.mozIndexedDB).open(this.dbname, 1);
 
-        this.request.onerror = (event) => {
+        indexedDB.onerror = (event) => {
             console.error(`Database error: ${event.target.errorCode}`);
-            this.isOpen = false;
             threadEnd = true;
             throw `Database error: ${event.target.errorCode}`;
         };
 
-        this.request.onupgradeneeded = (event) => {
+        indexedDB.onupgradeneeded = (event) => {
             let db = event.target.result;
             let store = db.createObjectStore(storeName, {keyPath: "key"});
             store.createIndex('created', 'created', {unique: false});
-        }
+        };
 
-        this.request.onsuccess = (event) => {
+        indexedDB.onsuccess = (event) => {
             this._db = event.target.result;
-            this.isOpen = true;
             threadEnd = true;
         };
 
         while (!threadEnd){await this._sleep();}
     }
 
+    /**
+     * Store a item in the browser IndexedDBStorage.
+     * @param {string} key Indetificative key of he object to store.
+     * @param {object} value Any kind of object to store.
+     */
     async setItem(key, value){
         // variable to control asyncronity.
         let threadEnd = false;
@@ -47,9 +65,10 @@ class IndexedDBStorage {
         let request = objectStore.delete(key);
 
         // Prepare the object to store the information.
-        let object = new Object;
+        let object = {};
         object.key = key;
         object.value = value;
+        object.compression = false; // Future fla
         object.created = Date.now();
 
         // Make a request to add our newItem object to the object store.
@@ -60,6 +79,11 @@ class IndexedDBStorage {
         while (!threadEnd){await this._sleep();}
     }
 
+    /**
+     * Recover a item from the browser IndexedDBStorage.
+     * @param {string} key Indetificative key of he object to store. 
+     * @returns The stored object if exists, null otherwise.
+     */
     async getItem(key){
         // variable to control asyncronity.
         let threadEnd = false;
@@ -80,6 +104,10 @@ class IndexedDBStorage {
         return objectStoreRequest.result ? objectStoreRequest.result.value : null;
     }
 
+    /**
+     * Remove a item from the browser IndexedDBStorage.
+     * @param {string} key Indetificative key of he object to remove. 
+     */
     async removeItem(key){
         // variable to control asyncronity.
         let threadEnd = false;
@@ -97,6 +125,9 @@ class IndexedDBStorage {
         while (!threadEnd){await this._sleep();}
     }
 
+    /**
+     * Remove all items from the browser IndexDBStorage.
+     */
     async clear(){
         // variable to control asyncronity.
         let threadEnd = false;
@@ -113,16 +144,17 @@ class IndexedDBStorage {
         while (!threadEnd){await this._sleep();}
     }
 
-    async purge(seconds=null){
+    /**
+     * Purge items from the browser IndexDBStorage.
+     * @param {integer} seconds Remove items older than 'seconds'.
+     */
+    async purge(seconds){
         // variable to control asyncronity.
         let threadEnd = false;
 
-        // Set time to live of the stored items. Convert to ms. 
-        let ttl = seconds ? seconds : this.ttl;
-
-        // If ttl is still null, no further actions are taken.
-        if (!ttl) {return;}
-        let keyRangeValue = IDBKeyRange.upperBound(Date.now() - (ttl*1000));
+        // If seconds is null, no further actions are taken.
+        if (!seconds) {return;}
+        let keyRangeValue = IDBKeyRange.upperBound(Date.now() - (seconds*1000));
 
         // open a read/write db transaction, ready for adding the data.
         let transaction = this._db.transaction([this.storeName], "readwrite");
