@@ -16,7 +16,9 @@ Optionaly supports user-defined storage name. If none is specified 'default' is 
 
 ## IndexedDBStorage.setItem(key, value)
 Store a item in the browser IndexedDBStorage.
+
 · key Indentificative key of the object to store.
+
 · value Any kind of object to store.
 
 ## IndexedDBStorage.getKey(key)
