@@ -23,10 +23,12 @@ Store a item in the browser IndexedDBStorage.
 
 ## IndexedDBStorage.getKey(key)
 Recover a item from the browser IndexedDBStorage.
+
 · key Indentificative key of the object to recover. 
 
 ## IndexedDBStorage.removeItem(key)
 Remove a item from the browser IndexedDBStorage.
+
 · key Indentificative key of the object to remove. 
 
 ## IndexedDBStorage.clear()
@@ -34,6 +36,7 @@ Remove a item from the browser IndexedDBStorage.
 
 ## IndexedDBStorage.purge(seconds)
 Purge items from the browser IndexDBStorage.
+
 · seconds Remove items older than 'seconds'.
 
 
